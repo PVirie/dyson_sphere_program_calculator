@@ -19,7 +19,7 @@ class Numerical(Exception):
     pass
 
 
-def solve(require_resource, production_speed, allowed_production, target_speed):
+def solve(require_resource, production_speed, allowed_production, target_speed, minimize_base_resource=False):
     """
     require_resource: num_resource x num_production
     production_speed : num_resource x num_production
@@ -35,7 +35,10 @@ def solve(require_resource, production_speed, allowed_production, target_speed):
     num_production = require_resource.shape[1]
     num_resource = require_resource.shape[0]
 
-    c = np.concatenate([np.ones(num_production), np.zeros(num_resource)], axis=0)
+    if not minimize_base_resource:
+        c = np.concatenate([np.ones(num_production), np.zeros(num_resource)], axis=0)
+    else:
+        c = np.concatenate([np.zeros(num_production), np.ones(num_resource)], axis=0)
 
     A_ub = [
         np.concatenate([np.zeros([num_resource, num_production]), -np.eye(num_resource)], axis=1),
