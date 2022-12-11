@@ -19,41 +19,35 @@ class Numerical(Exception):
     pass
 
 
-def solve(require_resource, production_speed, allowed_production, target_speed, minimize_base_resource=False):
+def solve(require_resource_rate, production_speed, allowed_production, target_speed, base_production_cost=None):
     """
-    require_resource: num_resource x num_production
+    require_resource_rate: num_resource x num_production
     production_speed : num_resource x num_production
     allowed_production : num_production
     target_speed : num_resource
+    base_production_cost: num_production
 
     return a vector that count fabricator units for each resource (num_resource).
     """
-    require_resource = np.asarray(require_resource)
+    require_resource_rate = np.asarray(require_resource_rate)
     production_speed = np.asarray(production_speed)
     allowed_production = np.asarray(allowed_production)
     target_speed = np.asarray(target_speed)
-    num_production = require_resource.shape[1]
-    num_resource = require_resource.shape[0]
+    num_production = require_resource_rate.shape[1]
+    num_resource = require_resource_rate.shape[0]
 
-    if not minimize_base_resource:
+    if base_production_cost is None:
         c = np.concatenate([np.ones(num_production), np.zeros(num_resource)], axis=0)
     else:
-        c = np.concatenate([np.zeros(num_production), np.ones(num_resource)], axis=0)
+        c = np.concatenate([np.array(base_production_cost) + 1e-2, np.zeros(num_resource)], axis=0)
 
-    A_ub = [
-        np.concatenate([np.zeros([num_resource, num_production]), -np.eye(num_resource)], axis=1),
-        np.concatenate([-(production_speed - require_resource), np.eye(num_resource)], axis=1)
-    ]
-    b_ub = [
-        -target_speed,
-        np.zeros(num_resource)
-    ]
+    A_ub = np.concatenate([np.zeros([num_resource, num_production]), -np.eye(num_resource)], axis=1)
+    b_ub = -target_speed
 
-    A_ub = np.concatenate(A_ub, axis=0)
-    b_ub = np.concatenate(b_ub, axis=0)
-
-    A_eq = np.reshape(np.concatenate([1.0 - allowed_production, np.zeros(num_resource)], axis=0), [1, -1])
-    b_eq = np.zeros(1)
+    A_eq = np.concatenate([
+    np.reshape(np.concatenate([1.0 - allowed_production, np.zeros(num_resource)], axis=0), [1, -1]),
+        np.concatenate([-(production_speed - require_resource_rate), np.eye(num_resource)], axis=1)], axis=0)
+    b_eq = np.zeros(1 + num_resource)
 
     lb = np.zeros(num_production + num_resource)
 

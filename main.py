@@ -61,23 +61,39 @@ if __name__ == '__main__':
 
     target_speed = np.zeros(len(id_to_index))
     # target_speed[id_to_index['Universe matrix']] = 1.0
-    # target_speed[id_to_index['Small carrier rocket']] = 0.25
-    # target_speed[id_to_index['Solar sail']] = 2.0
-    target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
+    target_speed[id_to_index['Small carrier rocket']] = 0.25
+    target_speed[id_to_index['Solar sail']] = 2.0
+    # target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
     # target_speed[id_to_index['Sorter Mk.II']] = 2.0
     # target_speed[id_to_index['Conveyor belt Mk.II']] = 3.0
 
-    allowed_bases = ['Iron ore', 'Copper ore', 'Coal', 'Titanium ore', 'Silicon ore', 'Water', 'Sulfuric acid', 'Hydrogen', 'Stone', 'Organic crystal', 'Fire ice', 'Crude oil', 'Critical photon']
+    allowed_bases = [
+        ('Iron ore', 1.0),
+        ('Copper ore', 1.0),
+        ('Coal', 1.0),
+        ('Titanium ore', 1.0),
+        ('Silicon ore', 1.0),
+        ('Water', 1.0),
+        ('Sulfuric acid', 1.0),
+        ('Hydrogen', 1.0),
+        ('Stone', 1.0),
+        ('Organic crystal', 1.0),
+        ('Fire ice', 1.0)
+    ]
     allowed_production = np.ones(len(production_speed))
+    base_production_cost = np.zeros(len(production_speed))
     for i, p in enumerate(production_speed):
         if index_to_base[i]:
-            if p[0][0] not in allowed_bases:
+            try:
+                found = next(x for x in allowed_bases if x[0] == p[0][0])
+                base_production_cost[i] = found[1]
+            except StopIteration:
                 allowed_production[i] = 0.0
 
-    sol, s = solver.solve(require_resource_matrix, production_speed_matrix, allowed_production, target_speed, minimize_base_resource=True)
+    sol, s = solver.solve(require_resource_matrix, production_speed_matrix, allowed_production, target_speed, base_production_cost=base_production_cost)
 
     print('=====================')
-    for i in range(len(require_resource)):
+    for i in range(len(production_speed)):
         if sol[i] > 1e-6:
             print('x', f'{sol[i]:.2f}', 'of', production_machine[i], 'for', end=' ')
             for p in production_speed[i]:
