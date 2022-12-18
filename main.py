@@ -15,11 +15,10 @@ if __name__ == '__main__':
         for row in table_reader:
             production_machine.append(row[5])
             seconds_per_tick = float(row[4])
-            index_to_base.append(seconds_per_tick <= 0)
             if seconds_per_tick <= 0:
                 seconds_per_tick = 1
             id = row[0]
-            num_per_tick = int(row[1])
+            num_per_tick = float(row[1])
             speed = []
             if id not in id_to_index:
                 id_to_index[id] = len(id_to_index)
@@ -27,7 +26,7 @@ if __name__ == '__main__':
 
             alt_id = row[2]
             if alt_id != '':
-                alt_num_per_tick = int(row[3])
+                alt_num_per_tick = float(row[3])
                 if alt_id not in id_to_index:
                     id_to_index[alt_id] = len(id_to_index)
                 speed.append((alt_id, alt_num_per_tick / seconds_per_tick))
@@ -45,6 +44,7 @@ if __name__ == '__main__':
                 resource.append((sub_id, sub_num_per_tick / seconds_per_tick))
 
             require_resource.append(resource)
+            index_to_base.append(len(resource) == 0)
 
     # for p, r in zip(production_speed, require_resource):
     #     print(p, r)
@@ -60,27 +60,32 @@ if __name__ == '__main__':
             production_speed_matrix[id_to_index[x[0]], i] = x[1]
 
     target_speed = np.zeros(len(id_to_index))
-    # target_speed[id_to_index['Universe matrix']] = 1.0
-    target_speed[id_to_index['Small carrier rocket']] = 0.25
-    target_speed[id_to_index['Solar sail']] = 2.0
+    target_speed[id_to_index['Universe matrix']] = 5.0
+    # target_speed[id_to_index['Small carrier rocket']] = 0.25
+    # target_speed[id_to_index['Solar sail']] = 2.0
     # target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
-    # target_speed[id_to_index['Sorter Mk.II']] = 2.0
-    # target_speed[id_to_index['Conveyor belt Mk.II']] = 3.0
+    # target_speed[id_to_index['Sorter Mk.I']] = 1.0
+    # target_speed[id_to_index['Sorter Mk.II']] = 0.5
+    # target_speed[id_to_index['Conveyor belt Mk.I']] = 3.0
+    # target_speed[id_to_index['Conveyor belt Mk.II']] = 1.5
 
     allowed_bases = [
         ('Iron ore', 1.0),
         ('Copper ore', 1.0),
-        ('Coal', 1.0),
+        ('Coal', 0.1),
         ('Titanium ore', 1.0),
         ('Silicon ore', 1.0),
         ('Water', 1.0),
         ('Sulfuric acid', 1.0),
         ('Hydrogen', 1.0),
         ('Stone', 1.0),
-        ('Organic crystal', 1.0),
-        ('Fire ice', 1.0)
+        ('Fire ice', 1.0),
+        ('Critical photon', 1.0),
+        ('Crude oil', 1.0)
     ]
     allowed_production = np.ones(len(production_speed))
+    allowed_production[9] = 0.0 # disable Energetic graphite,1,Hydrogen,3,4,Refinery,Refined oil,1,Hydrogen,2,,,,,,,,
+    allowed_production[11] = 0.0 # disable Hydrogen,1,Refined oil,2,4,Refinery,Crude oil,2,,,,,,,,,,
     base_production_cost = np.zeros(len(production_speed))
     for i, p in enumerate(production_speed):
         if index_to_base[i]:
@@ -92,9 +97,12 @@ if __name__ == '__main__':
 
     sol, s = solver.solve(require_resource_matrix, production_speed_matrix, allowed_production, target_speed, base_production_cost=base_production_cost)
 
+    sorted_indices = sorted(list(range(len(production_speed))), key = lambda i: production_machine[i])
+
     print('=====================')
-    for i in range(len(production_speed)):
-        if sol[i] > 1e-6:
+    for j in range(len(production_speed)):
+        i = sorted_indices[j]
+        if sol[i] > 1e-2:
             print('x', f'{sol[i]:.2f}', 'of', production_machine[i], 'for', end=' ')
             for p in production_speed[i]:
                 print(p[0], '(' + f'{p[1]:.2f}' + ')', end=' ')
