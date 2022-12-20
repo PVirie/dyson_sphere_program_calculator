@@ -60,14 +60,21 @@ if __name__ == '__main__':
             production_speed_matrix[id_to_index[x[0]], i] = x[1]
 
     target_speed = np.zeros(len(id_to_index))
-    target_speed[id_to_index['Universe matrix']] = 5.0
+    # target_speed[id_to_index['Universe matrix']] = 5.0
     # target_speed[id_to_index['Small carrier rocket']] = 0.25
     # target_speed[id_to_index['Solar sail']] = 2.0
-    # target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
     # target_speed[id_to_index['Sorter Mk.I']] = 1.0
     # target_speed[id_to_index['Sorter Mk.II']] = 0.5
     # target_speed[id_to_index['Conveyor belt Mk.I']] = 3.0
     # target_speed[id_to_index['Conveyor belt Mk.II']] = 1.5
+    target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
+    target_speed[id_to_index['Arc smelter']] = 0.3333
+    target_speed[id_to_index['Ray receiver']] = 0.125
+    target_speed[id_to_index['Oil refinery']] = 0.16666
+    target_speed[id_to_index['Fractionator']] = 0.3333
+    target_speed[id_to_index['Chemical plant']] = 0.2000
+    target_speed[id_to_index['Matrix lab']] = 0.3333
+
 
     allowed_bases = [
         ('Iron ore', 1.0),
