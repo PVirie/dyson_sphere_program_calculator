@@ -60,20 +60,20 @@ if __name__ == '__main__':
             production_speed_matrix[id_to_index[x[0]], i] = x[1]
 
     target_speed = np.zeros(len(id_to_index))
-    # target_speed[id_to_index['Universe matrix']] = 5.0
+    target_speed[id_to_index['Universe matrix']] = 10.0
     # target_speed[id_to_index['Small carrier rocket']] = 0.25
     # target_speed[id_to_index['Solar sail']] = 2.0
     # target_speed[id_to_index['Sorter Mk.I']] = 1.0
     # target_speed[id_to_index['Sorter Mk.II']] = 0.5
     # target_speed[id_to_index['Conveyor belt Mk.I']] = 3.0
     # target_speed[id_to_index['Conveyor belt Mk.II']] = 1.5
-    target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
-    target_speed[id_to_index['Arc smelter']] = 0.3333
-    target_speed[id_to_index['Ray receiver']] = 0.125
-    target_speed[id_to_index['Oil refinery']] = 0.16666
-    target_speed[id_to_index['Fractionator']] = 0.3333
-    target_speed[id_to_index['Chemical plant']] = 0.2000
-    target_speed[id_to_index['Matrix lab']] = 0.3333
+    # target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
+    # target_speed[id_to_index['Arc smelter']] = 0.3333
+    # target_speed[id_to_index['Ray receiver']] = 0.125
+    # target_speed[id_to_index['Oil refinery']] = 0.16666
+    # target_speed[id_to_index['Fractionator']] = 0.3333
+    # target_speed[id_to_index['Chemical plant']] = 0.2000
+    # target_speed[id_to_index['Matrix lab']] = 0.3333
 
 
     allowed_bases = [
@@ -88,11 +88,15 @@ if __name__ == '__main__':
         ('Stone', 1.0),
         ('Fire ice', 1.0),
         ('Critical photon', 1.0),
-        ('Crude oil', 1.0)
+        ('Crude oil', 1.0),
+        ('Organic crystal', 1.0)
     ]
     allowed_production = np.ones(len(production_speed))
     allowed_production[9] = 0.0 # disable Energetic graphite,1,Hydrogen,3,4,Refinery,Refined oil,1,Hydrogen,2,,,,,,,,
-    allowed_production[11] = 0.0 # disable Hydrogen,1,Refined oil,2,4,Refinery,Crude oil,2,,,,,,,,,,
+    # allowed_production[11] = 0.0 # disable Hydrogen,1,Refined oil,2,4,Refinery,Crude oil,2,,,,,,,,,,
+    allowed_production[10] = 0.0 # disable Refined oil,3,,,4,Refinery,Refined oil,2,Hydrogen,1,Coal,1,,,,,,
+    allowed_production[6] = 0.0 # disable Graphene,2,,,3,Chemical plant,Energetic graphite,3,Sulfuric acid,1,,,,,,,,
+   
     base_production_cost = np.zeros(len(production_speed))
     for i, p in enumerate(production_speed):
         if index_to_base[i]:
