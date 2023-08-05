@@ -1,7 +1,9 @@
+import os
 import csv
 import solver
 import numpy as np
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == '__main__':
     id_to_index = {}
@@ -9,7 +11,7 @@ if __name__ == '__main__':
     production_speed = []
     production_machine = []
     index_to_base = []
-    with open("resource_table.csv", "r") as file:
+    with open(os.path.join(dir_path, "..", "data/resource_table.csv"), "r") as file:
         table_reader = csv.reader(file, delimiter=',', quotechar='"')
         next(table_reader)
         for row in table_reader:
@@ -60,13 +62,14 @@ if __name__ == '__main__':
             production_speed_matrix[id_to_index[x[0]], i] = x[1]
 
     target_speed = np.zeros(len(id_to_index))
-    target_speed[id_to_index['Universe matrix']] = 10.0
+    # target_speed[id_to_index['Universe matrix']] = 10.0
     # target_speed[id_to_index['Small carrier rocket']] = 0.25
     # target_speed[id_to_index['Solar sail']] = 2.0
-    # target_speed[id_to_index['Sorter Mk.I']] = 1.0
+    target_speed[id_to_index['Sorter Mk.I']] = 1.0
     # target_speed[id_to_index['Sorter Mk.II']] = 0.5
-    # target_speed[id_to_index['Conveyor belt Mk.I']] = 3.0
+    target_speed[id_to_index['Conveyor belt Mk.I']] = 15.0
     # target_speed[id_to_index['Conveyor belt Mk.II']] = 1.5
+    target_speed[id_to_index['Assembling machine Mk.I']] = 0.25
     # target_speed[id_to_index['Assembling machine Mk.II']] = 0.3333
     # target_speed[id_to_index['Arc smelter']] = 0.3333
     # target_speed[id_to_index['Ray receiver']] = 0.125
