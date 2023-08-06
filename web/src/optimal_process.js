@@ -17,18 +17,22 @@ op = (function () {
         // e.g., x1 + 2 x2 + 4 x3 + x4
         let obj = "";
         if (base_production_cost == null) {
-            obj += range(num_production, 1).join(" + ");
+            obj += range(num_production + num_resource, 1)
+                .map((i) => {
+                    return i <= num_production ? `x${i}` : `0 x${i}`;
+                })
+                .join(" + ");
         } else {
-            obj += range(num_production, 1)
+            obj += range(num_production + num_resource, 1)
                 .filter((i) => base_production_cost[i] > 0)
                 .map((i) => {
-                    return `${base_production_cost[i - 1]} x${i}`;
+                    return i <= num_production ? `${base_production_cost[i - 1]} x${i}` : `0 x${i}`;
                 })
                 .join(" + ");
         }
         // build bounds
         let bounds = range(num_production + num_resource, 1).map((i) => {
-            return `x${i} >= 0`;
+            return `0 <= x${i}`;
         });
 
         // then build constraints
@@ -36,7 +40,7 @@ op = (function () {
         let ineq_constraints = range(num_resource, 1)
             .filter((i) => target_speed[i - 1] > 0)
             .map((i) => {
-                return `x${i + num_production} >= ${target_speed[i - 1]}`;
+                return `${target_speed[i - 1]} - x${i + num_production} <= 0`;
             });
 
         // sum_i x(i)*allowed_production[i-1] = 0\n ...
@@ -50,12 +54,12 @@ op = (function () {
         let min_constraints = range(num_resource, 1)
             .map((i) => {
                 const rows = range(num_production, 1)
-                    .filter((j) => production_speed[i - 1][j - 1] > 0)
+                    .filter((j) => Math.abs(production_speed[i - 1][j - 1] - require_resource_rate[i - 1][j - 1]) > 1e-6)
                     .map((j) => {
                         return `${production_speed[i - 1][j - 1] - require_resource_rate[i - 1][j - 1]} x${j}`;
                     });
                 if (rows.length == 0) return null;
-                return `${rows.join(" + ")} = x${i + num_production}`;
+                return `${rows.join(" + ")} - x${i + num_production} = 0`;
             })
             .filter((r) => r != null);
 

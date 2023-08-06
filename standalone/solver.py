@@ -1,5 +1,4 @@
 import numpy as np
-from qpsolvers import solve_qp
 from scipy import optimize
 
 

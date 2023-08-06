@@ -21,7 +21,7 @@
         <script src="./thirdparties/highs.js"></script>
         <script src="./src/optimal_process.js"></script>
         <script type="text/javascript">
-            const add_numeric_item = function (parent, name) {
+            const add_numeric_item = function (parent, name, tag) {
                 const elem = document.createElement("div");
                 const label = document.createElement("label");
                 label.for = name;
@@ -29,6 +29,7 @@
                 elem.appendChild(label);
                 const item = document.createElement("input");
                 item.classList.add("item");
+                item.id = `${name}-${tag}`;
                 item.type = "number";
                 item.name = name;
                 item.value = 0;
@@ -39,7 +40,7 @@
                 parent.appendChild(elem);
             };
 
-            const add_boolean_item = function (parent, name) {
+            const add_boolean_item = function (parent, name, tag) {
                 const elem = document.createElement("div");
                 const label = document.createElement("label");
                 label.for = name;
@@ -47,8 +48,10 @@
                 elem.appendChild(label);
                 const item = document.createElement("input");
                 item.classList.add("item");
+                item.id = `${name}-${tag}`;
                 item.type = "checkbox";
                 item.name = name;
+                item.checked = true;
                 elem.appendChild(item);
                 parent.appendChild(elem);
             };
@@ -70,23 +73,53 @@
                 const all_products = {};
                 const all_bases = {};
                 const all_productions = {};
+
                 for (const datum of data) {
                     for (const p of datum.products) {
-                        if (all_products[p.id] == null) {
-                            all_products[p.id] = 0;
-                            add_numeric_item(product_list, p.id);
+                        const id = p.id.replaceAll(" ", "_").replaceAll(".", "_");
+                        if (all_products[id] == null) {
+                            all_products[id] = 0;
+                            add_numeric_item(product_list, id, "target-speed");
                         }
                     }
                     const is_base = datum.requires.length === 0;
                     if (is_base) {
                         for (const p of datum.products) {
-                            all_bases[p.id] = 0;
-                            add_numeric_item(base_list, p.id);
+                            const id = p.id.replaceAll(" ", "_").replaceAll(".", "_");
+                            all_bases[id] = 0;
+                            add_numeric_item(base_list, id, "base");
                         }
                     }
-                    prod_id = `${datum.products.map((p) => p.id).join(" & ")} from ${datum.requires.map((p) => p.id).join(" & ")}`;
+                    const prod_id = `${datum.products.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("_")}-from-${datum.requires.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("-")}`;
                     all_productions[prod_id] = false;
-                    add_boolean_item(production_list, prod_id);
+                    add_boolean_item(production_list, prod_id, "production");
+                }
+
+                // require_resource_rate: num_resource x num_production
+                // production_speed : num_resource x num_production
+                const require_resource_rate = Object.keys(all_products).map((id) => {
+                    return Object.keys(all_productions).map((production_id) => {
+                        return 0;
+                    });
+                });
+                const production_speed = Object.keys(all_products).map((id) => {
+                    return Object.keys(all_productions).map((production_id) => {
+                        return 0;
+                    });
+                });
+                for (const datum of data) {
+                    const prod_id = `${datum.products.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("_")}-from-${datum.requires.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("-")}`;
+                    const prod_index = Object.keys(all_productions).indexOf(prod_id);
+                    for (const p of datum.products) {
+                        const id = p.id.replaceAll(" ", "_").replaceAll(".", "_");
+                        const index = Object.keys(all_products).indexOf(id);
+                        production_speed[index][prod_index] = p.num_per_tick / datum.craft_time;
+                    }
+                    for (const p of datum.requires) {
+                        const id = p.id.replaceAll(" ", "_").replaceAll(".", "_");
+                        const index = Object.keys(all_products).indexOf(id);
+                        require_resource_rate[index][prod_index] = p.num_per_tick / datum.craft_time;
+                    }
                 }
 
                 const highs_settings = {
@@ -98,33 +131,34 @@
                 const calculate_button = document.getElementById("calculate-button");
                 const result = document.getElementById("result");
                 calculate_button.addEventListener("click", async function (e) {
-                    // require_resource_rate: num_resource x num_production
-                    // production_speed : num_resource x num_production
-                    // allowed_production : num_production
-                    // target_speed : num_resource
-                    // base_production_cost: num_production
+                    const allowed_production = Object.keys(all_productions).map((id) => {
+                        return document.querySelector(`#${id}-production`).checked;
+                    });
 
-                    const require_resource_rate = [];
+                    const target_speed = Object.keys(all_products).map((id) => {
+                        const v = document.querySelector(`#${id}-target-speed`).value;
+                        if (v === "") return 0;
+                        return parseFloat(v);
+                    });
 
                     const params = op.build_matrices(require_resource_rate, production_speed, allowed_production, target_speed);
-
                     const PROBLEM = `Minimize
-                        obj:
-                            ${params.obj}
-                        Subject To
-                            ${params.constraints
-                                .map((c, i) => {
-                                    return `c${i}: ${c}`;
-                                })
-                                .join("\n")}
-                        Bounds
-                            ${params.bounds.join("\n")}
-                        End`;
+             obj:
+              ${params.obj}
+            Subject To
+             ${params.constraints
+                 .map((c, i) => {
+                     return `c${i}: ${c}`;
+                 })
+                 .join("\n ")}
+            Bounds
+             ${params.bounds.join("\n ")}
+            End`;
 
                     console.log(PROBLEM);
-
                     const sol = highs.solve(PROBLEM);
                     console.log(sol);
+                    Object.keys(sol.Columns).map((id, index) => {});
                 });
             });
         </script>

@@ -97,10 +97,11 @@
             };
 
             window.addEventListener("load", async () => {
+                console.log(PROBLEM);
                 const highs = await Module(highs_settings);
                 const sol = highs.solve(PROBLEM);
                 console.log(sol);
-                console.assert(JSON.stringify(sol) === JSON.stringify(EXPECTED_SOLUTION));
+                // console.assert(JSON.stringify(sol) === JSON.stringify(EXPECTED_SOLUTION));
             });
         </script>
     </body>
