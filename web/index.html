@@ -56,6 +56,32 @@
                 parent.appendChild(elem);
             };
 
+            const add_result_card = function (parent, production_data, count) {
+                // number of machines for product, product from base, base, ...
+                const elem = document.createElement("div");
+                elem.classList.add("result-card");
+                const title = document.createElement("h3");
+                title.innerText = `${production_data.craft_machine} ${count}`;
+                elem.appendChild(title);
+                const product_list = document.createElement("ul");
+                product_list.classList.add("product-list");
+                for (const p of production_data.products) {
+                    const item = document.createElement("li");
+                    item.innerText = `${p.id} ${p.num_per_tick * count}`;
+                    product_list.appendChild(item);
+                }
+                elem.appendChild(product_list);
+                const require_list = document.createElement("ul");
+                require_list.classList.add("require-list");
+                for (const p of production_data.requires) {
+                    const item = document.createElement("li");
+                    item.innerText = `${p.id} ${p.num_per_tick * count}`;
+                    require_list.appendChild(item);
+                }
+                elem.appendChild(require_list);
+                parent.appendChild(elem);
+            };
+
             window.addEventListener("load", async function () {
                 const r = await fetch("/data/craft_table", {
                     method: "GET",
@@ -69,10 +95,12 @@
                 const product_list = document.getElementById("product-list");
                 const base_list = document.getElementById("base-list");
                 const production_list = document.getElementById("production-list");
+                const result_list = document.getElementById("result");
 
                 const all_products = {};
                 const all_bases = {};
                 const all_productions = {};
+                const all_production_details = {};
 
                 for (const datum of data) {
                     for (const p of datum.products) {
@@ -92,6 +120,7 @@
                     }
                     const prod_id = `${datum.products.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("_")}-from-${datum.requires.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("-")}`;
                     all_productions[prod_id] = false;
+                    all_production_details[prod_id] = datum;
                     add_boolean_item(production_list, prod_id, "production");
                 }
 
@@ -143,22 +172,37 @@
 
                     const params = op.build_matrices(require_resource_rate, production_speed, allowed_production, target_speed);
                     const PROBLEM = `Minimize
-             obj:
-              ${params.obj}
-            Subject To
-             ${params.constraints
-                 .map((c, i) => {
-                     return `c${i}: ${c}`;
-                 })
-                 .join("\n ")}
-            Bounds
-             ${params.bounds.join("\n ")}
-            End`;
+                                    obj:
+                                     ${params.obj}
+                                    Subject To
+                                     ${params.constraints
+                                         .map((c, i) => {
+                                             return `c${i}: ${c}`;
+                                         })
+                                         .join("\n ")}
+                                    Bounds
+                                     ${params.bounds.join("\n ")}
+                                    End`;
 
-                    console.log(PROBLEM);
+                    // console.log(PROBLEM);
                     const sol = highs.solve(PROBLEM);
                     console.log(sol);
-                    Object.keys(sol.Columns).map((id, index) => {});
+                    const results = Object.keys(sol.Columns)
+                        .filter((id) => {
+                            return id.startsWith("x") && sol.Columns[id].Primal > 0;
+                        })
+                        .map((id, index) => {
+                            return [sol.Columns[id].Index, sol.Columns[id].Primal];
+                        });
+
+                    while (result_list.firstChild) result_list.firstChild.remove();
+
+                    for (const r of results) {
+                        const id = Object.keys(all_productions)[r[0]];
+                        const detail = all_production_details[id];
+                        console.log(`${id}: ${r[1]}`);
+                        add_result_card(result_list, detail, r[1]);
+                    }
                 });
             });
         </script>

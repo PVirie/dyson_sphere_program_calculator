@@ -14,6 +14,7 @@ async def get_craft_table():
         data = []
         for row in table_reader:
             datum = {
+                "craft_machine": row[5],
                 "craft_time": float(row[4]),
                 "craft_from": row[5],
                 "products": [
