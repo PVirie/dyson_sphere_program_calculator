@@ -13,7 +13,13 @@
             <div id="product-list" class="list"></div>
             <div id="base-list" class="list"></div>
             <div id="production-list" class="list"></div>
+            <div id="control" class="control">
+                <input id="calculate-button" type="button" value="Calculate" />
+                <div id="result" class="list"></div>
+            </div>
         </div>
+        <script src="./thirdparties/highs.js"></script>
+        <script src="./src/optimal_process.js"></script>
         <script type="text/javascript">
             const add_numeric_item = function (parent, name) {
                 const elem = document.createElement("div");
@@ -82,6 +88,44 @@
                     all_productions[prod_id] = false;
                     add_boolean_item(production_list, prod_id);
                 }
+
+                const highs_settings = {
+                    // In the browser, point locateFile to the URL of the wasm file (see below)
+                    locateFile: (file) => "/thirdparties/" + file,
+                };
+                const highs = await Module(highs_settings);
+
+                const calculate_button = document.getElementById("calculate-button");
+                const result = document.getElementById("result");
+                calculate_button.addEventListener("click", async function (e) {
+                    // require_resource_rate: num_resource x num_production
+                    // production_speed : num_resource x num_production
+                    // allowed_production : num_production
+                    // target_speed : num_resource
+                    // base_production_cost: num_production
+
+                    const require_resource_rate = [];
+
+                    const params = op.build_matrices(require_resource_rate, production_speed, allowed_production, target_speed);
+
+                    const PROBLEM = `Minimize
+                        obj:
+                            ${params.obj}
+                        Subject To
+                            ${params.constraints
+                                .map((c, i) => {
+                                    return `c${i}: ${c}`;
+                                })
+                                .join("\n")}
+                        Bounds
+                            ${params.bounds.join("\n")}
+                        End`;
+
+                    console.log(PROBLEM);
+
+                    const sol = highs.solve(PROBLEM);
+                    console.log(sol);
+                });
             });
         </script>
     </body>
