@@ -10,16 +10,34 @@
     </head>
     <body>
         <div class="container">
-            <div id="product-list" class="list"></div>
-            <div id="base-list" class="list"></div>
-            <div id="production-list" class="list"></div>
-            <div id="control" class="control">
+            <div class="control">
+                <div id="product-speed" class="suggest-tag">
+                    <label>Find product</label>
+                    <div>
+                        <input type="search" class="widget-search-input" />
+                        <div class="widget-tag-suggest"></div>
+                    </div>
+                    <div class="widget-tag-list"></div>
+                </div>
+            </div>
+            <div class="control">
+                <div id="process-disabled" class="suggest-tag">
+                    <label>Find process</label>
+                    <div>
+                        <input type="search" class="widget-search-input" />
+                        <div class="widget-tag-suggest"></div>
+                    </div>
+                    <div class="widget-tag-list"></div>
+                </div>
+            </div>
+            <div class="control">
                 <input id="calculate-button" type="button" value="Calculate" />
                 <div id="result" class="list"></div>
             </div>
         </div>
         <script src="./thirdparties/highs.js"></script>
         <script src="./src/optimal_process.js"></script>
+        <script src="./src/suggest_tags.js"></script>
         <script type="text/javascript">
             const add_numeric_item = function (parent, name, tag) {
                 const elem = document.createElement("div");
@@ -92,9 +110,6 @@
                 }
                 const data = await r.json();
 
-                const product_list = document.getElementById("product-list");
-                const base_list = document.getElementById("base-list");
-                const production_list = document.getElementById("production-list");
                 const result_list = document.getElementById("result");
 
                 const all_products = {};
@@ -102,27 +117,91 @@
                 const all_productions = {};
                 const all_production_details = {};
 
+                const product_speed_suggest = new Suggest_tag(
+                    document.querySelector("#product-speed"),
+                    (id) => {
+                        // <span id=`${id}`>display</span>
+                        const elem = document.createElement("span");
+                        elem.id = id;
+                        elem.innerText = all_products[id];
+                        return elem;
+                    },
+                    (id) => {
+                        // <div>
+                        //     <label>display</label>
+                        //     <input id=`${id}-target-speed` type="number" value="1" min="0" max="1000" step="0.25" />
+                        // </div>
+                        const elem = document.createElement("div");
+                        const label = document.createElement("label");
+                        label.innerText = all_products[id];
+                        elem.appendChild(label);
+                        const item = document.createElement("input");
+                        item.id = `${id}-target-speed`;
+                        item.type = "number";
+                        item.value = 1;
+                        item.min = 0;
+                        item.max = 1000;
+                        item.step = 0.25;
+                        elem.appendChild(item);
+                        return elem;
+                    }
+                );
+                const process_disable_suggest = new Suggest_tag(
+                    document.querySelector("#process-disabled"),
+                    (id) => {
+                        // <span id=`${id}`>display</span>
+                        const elem = document.createElement("span");
+                        elem.id = id;
+                        elem.innerText = all_productions[id];
+                        return elem;
+                    },
+                    (id) => {
+                        // <span id=`${id}`>display</span>
+                        const elem = document.createElement("span");
+                        elem.id = id;
+                        elem.innerText = all_productions[id];
+                        return elem;
+                    }
+                );
+
                 for (const datum of data) {
                     for (const p of datum.products) {
                         const id = p.id.replaceAll(" ", "_").replaceAll(".", "_");
                         if (all_products[id] == null) {
-                            all_products[id] = 0;
-                            add_numeric_item(product_list, id, "target-speed");
+                            all_products[id] = p.id;
+                            // add_numeric_item(product_list, id, "target-speed");
                         }
                     }
                     const is_base = datum.requires.length === 0;
                     if (is_base) {
                         for (const p of datum.products) {
                             const id = p.id.replaceAll(" ", "_").replaceAll(".", "_");
-                            all_bases[id] = 0;
-                            add_numeric_item(base_list, id, "base");
+                            all_bases[id] = p.id;
+                            // add_numeric_item(base_list, id, "base");
                         }
                     }
                     const prod_id = `${datum.products.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("_")}-from-${datum.requires.map((p) => p.id.replaceAll(" ", "_").replaceAll(".", "_")).join("-")}`;
-                    all_productions[prod_id] = false;
+                    all_productions[prod_id] = `${datum.products.map((p) => p.id).join(", ")} from ${datum.requires.map((p) => p.id).join(", ")}`;
                     all_production_details[prod_id] = datum;
-                    add_boolean_item(production_list, prod_id, "production");
+                    // add_boolean_item(production_list, prod_id, "production");
                 }
+
+                product_speed_suggest.add_items(
+                    Object.keys(all_products).map((id) => {
+                        return {
+                            tag: id,
+                            display: all_products[id],
+                        };
+                    })
+                );
+                process_disable_suggest.add_items(
+                    Object.keys(all_productions).map((id) => {
+                        return {
+                            tag: id,
+                            display: all_productions[id],
+                        };
+                    })
+                );
 
                 // require_resource_rate: num_resource x num_production
                 // production_speed : num_resource x num_production
@@ -161,11 +240,11 @@
                 const result = document.getElementById("result");
                 calculate_button.addEventListener("click", async function (e) {
                     const allowed_production = Object.keys(all_productions).map((id) => {
-                        return document.querySelector(`#${id}-production`).checked;
+                        return !process_disable_suggest.get_selected().includes(id);
                     });
 
                     const target_speed = Object.keys(all_products).map((id) => {
-                        const v = document.querySelector(`#${id}-target-speed`).value;
+                        const v = product_speed_suggest.get_selected().includes(id) ? document.getElementById(`${id}-target-speed`).value : "";
                         if (v === "") return 0;
                         return parseFloat(v);
                     });
